@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="es">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NutriSeed Debug</title>
+<body style="font-family:system-ui,Arial;padding:24px">
+  <h1>NutriSeed – Debug</h1>
+  <form id="f">
+    <label>Cultivo
+      <select id="crop" required>
+        <option value="" disabled selected>Elegí</option>
+        <option value="maiz">Maíz</option>
+      </select>
+    </label><br><br>
+    <label>Año
+      <select id="year" required>
+        <option value="" disabled selected>Elegí</option>
+        <option value="neutro">Neutro</option>
+      </select>
+    </label><br><br>
+    <label>N <input id="n" value="10"></label>
+    <label>P <input id="p" value="10"></label>
+    <label>K <input id="k" value="10"></label>
+    <button>Calcular</button>
+  </form>
+  <pre id="out" style="background:#f3f3f3;padding:12px;border-radius:8px"></pre>
+  <script>
+    const base = { maiz: {N:60,P:35,K:80} };
+    const mult = { neutro:1.0 };
+    function num(v){ return parseFloat(String(v).replace(',','.')); }
+    document.getElementById('f').addEventListener('submit', (e)=>{
+      e.preventDefault();
+      try{
+        const crop = document.getElementById('crop').value;
+        const year = document.getElementById('year').value;
+        const N = num(document.getElementById('n').value);
+        const P = num(document.getElementById('p').value);
+        const K = num(document.getElementById('k').value);
+        if(!crop||!year||!isFinite(N)||!isFinite(P)||!isFinite(K)){ alert('Campos inválidos'); return; }
+        const rec = base[crop], m = mult[year];
+        const recN=rec.N*m, recP=rec.P*m, recK=rec.K*m;
+        const def = (r,a)=>Math.max(r-a,0);
+        const out = {
+          rec: {N:recN,P:recP,K:recK},
+          medidos: {N,P,K},
+          def: {N:def(recN,N),P:def(recP,P),K:def(recK,K)}
+        };
+        document.getElementById('out').textContent = JSON.stringify(out,null,2);
+      }catch(err){ console.error(err); alert('Error: '+err.message); }
+    });
+  </script>
+</body>
+</html>
