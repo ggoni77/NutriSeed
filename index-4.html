@@ -1,0 +1,1280 @@
+<!DOCTYPE html>
+<!--
+NutriSeeds by PreSeeds Web App
+  ------------------
+  Calculadora de deficiencias nutricionales para cultivos agrícolas.
+
+  Esta aplicación permite al usuario ingresar los resultados de un análisis de suelo
+  para nitrógeno (N), fósforo (P) y potasio (K) y calcular la deficiencia
+  nutricional en función del cultivo seleccionado y la condición climática del año.
+
+  En esta versión se incorporan parámetros de suelo adicionales (materia orgánica,
+  azufre, calcio, magnesio, NAN, conductividad eléctrica, CIC y PSI) para ajustar
+  con mayor precisión las recomendaciones de N, P y K.  Además, se incluye el
+  logotipo de PreSeeds en la esquina superior derecha de la cabecera.
+
+  El diseño utiliza glassmorphism sobre un fondo degradado, con un esquema
+  responsivo para una visualización cómoda en dispositivos móviles y de escritorio.
+
+  Autor: ChatGPT (OpenAI)
+  © 2025 NutriSeeds by PreSeeds
+-->
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>NutriSeeds by PreSeeds – Calculadora de Deficiencias Nutricionales</title>
+    <style>
+      /*
+        Estilos globales y variables CSS.
+
+        Se emplea una paleta de colores corporativos y un efecto de vidrio esmerilado
+        (glassmorphism) sobre el contenedor de la aplicación. Las variables
+        CSS facilitan ajustes rápidos al diseño y mantienen consistencia.
+      */
+      :root {
+        /* Color de fondo de la tarjeta con transparencia */
+        --card-bg: rgba(255, 255, 255, 0.25);
+        /* Borde sutil para el contenedor */
+        --border-color: rgba(255, 255, 255, 0.3);
+        /* Color de acento para botones y elementos destacados (amarillo corporativo) */
+        --accent-color: #f7bf2c;
+        /* Color principal de texto (gris corporativo) */
+        --text-color: #3d3d3c;
+      }
+
+      body {
+        margin: 0;
+        padding: 0;
+        font-family: Arial, Helvetica, sans-serif;
+        /* Degradado de fondo usando los colores corporativos amarillo y gris */
+        background: linear-gradient(135deg, #3d3d3c, #f7bf2c);
+        /* Centrar el contenedor principal en la página */
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+        box-sizing: border-box;
+      }
+
+      /*
+        El contenedor general de la aplicación.
+        Aplica el efecto glassmorphism mediante un fondo translúcido, bordes
+        redondeados, blur y sombra sutil. Su ancho máximo garantiza que
+        permanezca centrado y legible en diferentes resoluciones.
+      */
+      .app-wrapper {
+        backdrop-filter: blur(15px);
+        background: var(--card-bg);
+        border-radius: 2rem;
+        border: 1px solid var(--border-color);
+        box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
+        padding: 2rem;
+        width: 100%;
+        max-width: 600px;
+        display: flex;
+        flex-direction: column;
+        box-sizing: border-box;
+      }
+
+      /*
+        Cabecera de la aplicación. Alinea el título y el logo en una sola fila
+        utilizando flexbox. El margen inferior garantiza separación con el formulario.
+      */
+      .header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+      }
+
+      /*
+        Título principal de la aplicación.
+        Se coloca por encima del contenedor para destacar el nombre
+        de la herramienta.
+      */
+      h1 {
+        margin: 0;
+        color: var(--text-color);
+        font-size: 2rem;
+      }
+
+      /*
+        Estilo del logo: define un ancho fijo y mantiene la proporción en altura.
+        Ajusta este valor según el tamaño deseado del logo en la interfaz.
+      */
+      .header .logo {
+        width: 80px;
+        height: auto;
+        display: block;
+      }
+      .header .logo svg {
+        width: 100%;
+        height: auto;
+        display: block;
+      }
+
+      /*
+        Etiquetas de formulario con contraste para su lectura.
+      */
+      label {
+        display: block;
+        margin-top: 1rem;
+        font-weight: 600;
+        color: var(--text-color);
+      }
+
+      /*
+        Estilos de campos de entrada y selectores.
+        Se utilizan bordes redondeados y relleno generoso para
+        mejorar la usabilidad, especialmente en dispositivos táctiles.
+      */
+      input,
+      select {
+        width: 100%;
+        padding: 0.6rem 0.8rem;
+        margin-top: 0.4rem;
+        border-radius: 0.8rem;
+        border: 1px solid var(--border-color);
+        background: rgba(255, 255, 255, 0.4);
+        color: #333;
+        font-size: 1rem;
+        box-sizing: border-box;
+      }
+
+      /*
+        Botón de acción principal.
+        Utiliza un degradado interno para dar sensación de profundidad.
+      */
+      button {
+        width: 100%;
+        padding: 0.8rem;
+        margin-top: 1.5rem;
+        border-radius: 1rem;
+        border: none;
+        background: linear-gradient(145deg, var(--accent-color), #3d3d3c);
+        color: #fff;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: transform 0.1s ease;
+      }
+
+      button:active {
+        /* Efecto de pulsación */
+        transform: scale(0.98);
+      }
+
+      /*
+        Panel de resultados. Permanece oculto hasta que se
+        realiza un cálculo y luego muestra la información
+        con suficiente contraste.
+      */
+      .result {
+        margin-top: 1.5rem;
+        padding: 1rem;
+        border-radius: 1rem;
+        background: rgba(255, 255, 255, 0.3);
+        color: var(--text-color);
+        display: none;
+        line-height: 1.6;
+      }
+
+      /*
+        Estilo de la tabla de fertilizantes. Utiliza bordes sutiles y
+        separaciones internas para mejorar la legibilidad sobre el fondo
+        translúcido.
+      */
+      .fertilizer-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 1rem;
+        font-size: 0.9rem;
+      }
+      .fertilizer-table th,
+      .fertilizer-table td {
+        padding: 0.5rem;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        text-align: left;
+        color: var(--text-color);
+      }
+      .fertilizer-table th {
+        font-weight: bold;
+        background: rgba(255, 255, 255, 0.2);
+      }
+
+      footer {
+        margin-top: 2rem;
+        text-align: center;
+        color: var(--text-color);
+        font-size: 0.9rem;
+      }
+
+      /*
+        Ajustes para pantallas pequeñas. Se reduce ligeramente el
+        tamaño de fuente y se ajustan los espacios para una mejor
+        legibilidad en móviles.
+      */
+      @media (max-width: 600px) {
+        .app-wrapper {
+          padding: 1.5rem;
+          border-radius: 1.5rem;
+        }
+        h1 {
+          font-size: 1.6rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app-wrapper">
+      <div class="header">
+        <h1>NutriSeeds by PreSeeds</h1>
+        <!-- Logo de PreSeeds en la esquina superior derecha -->
+        <div class="logo" aria-label="PreSeeds logo" title="PreSeeds">
+  <?xml version="1.0" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 20010904//EN"
+ "http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd">
+<svg version="1.0" xmlns="http://www.w3.org/2000/svg"
+ width="222.000000pt" height="294.000000pt" viewBox="0 0 222.000000 294.000000"
+ preserveAspectRatio="xMidYMid meet">
+
+<g transform="translate(0.000000,294.000000) scale(0.100000,-0.100000)"
+fill="#000000" stroke="none">
+<path d="M978 2930 c-517 -65 -913 -469 -969 -988 -53 -489 231 -952 699
+-1140 181 -73 431 -94 628 -53 405 84 739 399 844 798 127 483 -82 986 -515
+1241 -195 114 -465 170 -687 142z m383 -113 c362 -94 643 -375 735 -736 27
+-102 41 -273 30 -336 l-8 -38 -137 137 c-119 119 -141 137 -157 128 -11 -6
+-66 -58 -124 -116 -57 -58 -109 -106 -115 -106 -5 0 -111 101 -235 225 -124
+124 -232 225 -239 225 -7 0 -114 -100 -238 -222 -123 -123 -229 -225 -234
+-227 -6 -2 -64 49 -128 113 -65 64 -122 116 -127 116 -5 0 -69 -60 -142 -132
+-108 -109 -134 -130 -143 -118 -18 27 -3 244 24 351 76 294 287 548 560 674
+209 96 457 119 678 62z m-1071 -1188 c109 -13 261 -43 375 -75 99 -28 342
+-121 350 -134 5 -8 -58 -50 -77 -50 -6 0 -51 16 -100 35 -174 69 -393 122
+-603 145 -55 7 -103 15 -107 18 -3 4 -9 23 -13 42 l-6 35 48 -3 c26 -1 86 -7
+133 -13z m1815 -16 c-3 -21 -10 -41 -13 -44 -4 -4 -86 -19 -182 -33 -309 -47
+-458 -91 -685 -200 -205 -99 -335 -185 -499 -331 l-85 -75 -36 17 -36 17 68
+69 c321 326 841 556 1373 606 47 5 89 9 94 10 4 0 5 -16 1 -36z m-1806 -149
+c175 -26 381 -81 508 -135 l46 -20 -38 -28 -39 -29 -85 30 c-116 39 -296 83
+-409 99 -92 13 -94 13 -108 47 -25 61 -30 59 125 36z m1761 7 c0 -5 -7 -24
+-15 -43 -14 -35 -15 -35 -107 -48 -369 -49 -757 -217 -1042 -450 l-87 -71 -40
+12 c-22 7 -38 17 -36 23 7 23 166 151 278 225 130 87 296 171 444 226 202 76
+605 160 605 126z m-1660 -192 c110 -25 290 -80 290 -89 0 -4 -15 -19 -33 -33
+l-33 -25 -102 28 c-56 16 -129 34 -162 41 -55 11 -64 16 -90 55 -17 23 -30 45
+-30 49 0 7 45 0 160 -26z m1580 25 c0 -3 -13 -25 -30 -48 -26 -39 -35 -44 -91
+-55 -247 -49 -512 -160 -731 -308 -111 -74 -134 -82 -197 -64 -22 6 -20 9 35
+52 233 182 526 321 829 392 148 35 185 41 185 31z m-1487 -218 c31 -9 57 -20
+57 -25 0 -4 -10 -17 -23 -29 l-23 -22 -55 50 c-57 53 -57 53 44 26z m1311 3
+c-110 -124 -432 -270 -593 -269 l-46 0 55 35 c142 90 365 191 520 235 84 24
+87 24 64 -1z"/>
+<path d="M1038 2554 c-35 -16 -159 -47 -330 -83 l-273 -56 -3 -27 c-4 -35 -18
+-36 288 6 l245 33 73 -38 73 -39 72 39 72 39 260 -34 c143 -18 263 -33 268
+-34 4 0 7 14 7 30 0 17 -2 30 -5 30 -2 0 -127 25 -277 55 -164 33 -295 65
+-329 80 -69 31 -71 31 -141 -1z"/>
+<path d="M905 557 c-45 -21 -57 -40 -53 -88 4 -53 31 -75 113 -90 67 -12 85
+-23 85 -50 0 -52 -95 -68 -147 -25 -24 20 -31 22 -46 11 -24 -17 -21 -30 14
+-59 26 -22 40 -26 96 -26 72 0 114 18 132 57 32 70 -9 124 -108 141 -91 16
+-116 44 -69 76 28 20 65 20 102 1 32 -17 66 -12 66 10 0 39 -127 68 -185 42z"/>
+<path d="M60 395 l0 -165 30 0 c29 0 30 1 30 49 l0 49 76 4 c71 3 78 6 105 36
+22 25 29 42 29 75 0 86 -48 117 -180 117 l-90 0 0 -165z m204 83 c22 -31 20
+-45 -9 -73 -20 -21 -34 -25 -80 -25 l-55 0 0 60 0 60 64 0 c56 0 67 -3 80 -22z"/>
+<path d="M1870 500 c0 -33 -2 -60 -4 -60 -2 0 -20 7 -40 15 -93 39 -178 -44
+-148 -143 7 -21 21 -47 31 -56 28 -26 95 -32 125 -12 31 20 36 20 36 1 0 -9 9
+-15 25 -15 l25 0 0 165 0 165 -25 0 c-24 0 -25 -3 -25 -60z m-36 -101 c50 -39
+22 -119 -42 -119 -60 0 -88 85 -41 122 28 23 50 23 83 -3z"/>
+<path d="M458 456 c-16 -8 -28 -11 -28 -5 0 5 -11 9 -25 9 l-25 0 0 -115 0
+-115 25 0 c24 0 25 2 25 71 0 94 10 111 62 108 30 -3 42 1 50 15 19 34 -39 56
+-84 32z"/>
+<path d="M633 454 c-35 -17 -63 -67 -63 -111 0 -38 34 -91 68 -104 33 -13 116
+-7 137 11 28 24 0 39 -60 33 -56 -6 -85 5 -85 33 0 11 20 14 91 14 l91 0 -7
+37 c-10 55 -23 73 -60 89 -44 18 -72 17 -112 -2z m105 -46 c27 -27 13 -38 -48
+-38 -33 0 -60 3 -60 7 0 34 81 58 108 31z"/>
+<path d="M1225 463 c-32 -8 -74 -54 -81 -89 -14 -77 40 -144 117 -144 39 0 99
+18 99 29 0 20 -26 29 -70 24 -51 -6 -90 8 -90 32 0 12 18 15 90 15 90 0 90 0
+90 25 0 77 -73 128 -155 108z m93 -70 l14 -23 -66 0 c-36 0 -66 3 -66 7 0 3 8
+15 17 25 23 26 81 21 101 -9z"/>
+<path d="M1470 452 c-42 -21 -60 -53 -60 -110 0 -37 6 -50 34 -78 29 -29 41
+-34 80 -34 59 0 113 25 96 45 -8 10 -26 12 -66 8 -44 -5 -58 -2 -74 12 -11 10
+-20 22 -20 27 0 4 41 8 90 8 l90 0 0 30 c0 44 -19 77 -55 95 -43 20 -72 19
+-115 -3z m101 -42 c10 -6 19 -17 19 -25 0 -12 -14 -15 -60 -15 -46 0 -60 3
+-60 15 0 30 62 45 101 25z"/>
+<path d="M2003 456 c-35 -16 -53 -58 -36 -85 13 -21 50 -39 96 -46 38 -6 47
+-21 25 -43 -16 -16 -47 -15 -82 3 -16 9 -30 14 -30 13 -1 -2 -7 -11 -15 -20
+-32 -42 128 -69 169 -28 20 20 26 65 12 86 -12 18 -49 34 -80 34 -32 0 -58 22
+-47 41 5 7 25 10 56 7 32 -3 53 -1 59 7 26 31 -73 55 -127 31z"/>
+</g>
+</svg>
+
+</div>
+      </div>
+      <!--
+        Formulario principal. Recoge los valores de análisis de suelo,
+        el cultivo y la condición anual. También permite ingresar
+        parámetros adicionales del suelo para ajustar las recomendaciones.
+      -->
+      <form id="nutriForm">
+        <!-- Selección de cultivo -->
+        <label for="crop">Cultivo</label>
+        <select id="crop" required>
+          <option value="" disabled selected>Selecciona un cultivo</option>
+          <option value="soja">Soja</option>
+          <option value="trigo">Trigo</option>
+          <option value="maiz">Maíz</option>
+          <option value="girasol">Girasol</option>
+          <option value="mani">Maní</option>
+          <option value="cebada">Cebada</option>
+          <option value="lenteja">Lenteja</option>
+          <option value="arveja">Arveja</option>
+          <option value="picingallo">Maíz Picingallo</option>
+          <option value="algodon">Algodón</option>
+        </select>
+
+        <!-- Condición climática del año -->
+        <label for="yearType">Condición del año</label>
+        <select id="yearType" required>
+          <option value="" disabled selected>Selecciona una condición</option>
+          <option value="seco">Seco</option>
+          <option value="neutro">Neutro</option>
+          <option value="humedo">Húmedo</option>
+        </select>
+
+        <!-- Rendimiento objetivo del cultivo en toneladas por hectárea.  Este valor
+             permite dimensionar la extracción de nutrientes en función del
+             rendimiento deseado.  Por defecto se establece en 10 t/ha, que
+             corresponde a los rendimientos altos de maíz en la zona núcleo. -->
+        <label for="yieldVal">Rendimiento objetivo (t/ha)</label>
+        <input
+          type="number"
+          id="yieldVal"
+          placeholder="Ingresa rendimiento en t/ha (p. ej. 10)"
+          step="0.1"
+          min="0"
+          value="10"
+        />
+
+        <!-- Análisis de nutrientes principales -->
+        <label for="nVal">Análisis Nitrógeno (N)</label>
+        <input
+          type="number"
+          id="nVal"
+          placeholder="Ingresa N (ppm, mg/kg o unidad equivalente)"
+          step="0.01"
+          min="0"
+          required
+        />
+
+        <label for="pVal">Análisis Fósforo (P)</label>
+        <input
+          type="number"
+          id="pVal"
+          placeholder="Ingresa P (ppm, mg/kg o unidad equivalente)"
+          step="0.01"
+          min="0"
+          required
+        />
+
+        <label for="kVal">Análisis Potasio (K)</label>
+        <input
+          type="number"
+          id="kVal"
+          placeholder="Ingresa K (ppm, mg/kg o unidad equivalente)"
+          step="0.01"
+          min="0"
+          required
+        />
+
+        <!-- Parámetros adicionales para ajustes -->
+        <label for="omVal">Materia orgánica (%)</label>
+        <input
+          type="number"
+          id="omVal"
+          placeholder="Ingresa % MO (materia orgánica)"
+          step="0.01"
+          min="0"
+        />
+
+        <label for="sVal">Azufre (S)</label>
+        <input
+          type="number"
+          id="sVal"
+          placeholder="Ingresa S (mg/kg)"
+          step="0.01"
+          min="0"
+        />
+
+        <label for="caVal">Calcio (Ca)</label>
+        <input
+          type="number"
+          id="caVal"
+          placeholder="Ingresa Ca (mg/kg)"
+          step="0.01"
+          min="0"
+        />
+
+        <label for="mgVal">Magnesio (Mg)</label>
+        <input
+          type="number"
+          id="mgVal"
+          placeholder="Ingresa Mg (mg/kg)"
+          step="0.01"
+          min="0"
+        />
+
+        <label for="nanVal">NAN</label>
+        <input
+          type="number"
+          id="nanVal"
+          placeholder="Ingresa NAN"
+          step="0.01"
+          min="0"
+        />
+
+        <label for="ecVal">Conductividad eléctrica (CE)</label>
+        <input
+          type="number"
+          id="ecVal"
+          placeholder="Ingresa CE (dS/m)"
+          step="0.01"
+          min="0"
+        />
+
+        <label for="cicVal">CIC (meq/100g)</label>
+        <input
+          type="number"
+          id="cicVal"
+          placeholder="Ingresa CIC (CIC)"
+          step="0.01"
+          min="0"
+        />
+
+        <label for="psiVal">PSI</label>
+        <input
+          type="number"
+          id="psiVal"
+          placeholder="Ingresa PSI"
+          step="0.01"
+          min="0"
+        />
+
+        <!-- Micronutrientes adicionales -->
+        <label for="znVal">Zinc (Zn)</label>
+        <input
+          type="number"
+          id="znVal"
+          placeholder="Ingresa Zn (mg/kg)"
+          step="0.01"
+          min="0"
+        />
+
+        <label for="mnVal">Manganeso (Mn)</label>
+        <input
+          type="number"
+          id="mnVal"
+          placeholder="Ingresa Mn (mg/kg)"
+          step="0.01"
+          min="0"
+        />
+
+        <label for="bVal">Boro (B)</label>
+        <input
+          type="number"
+          id="bVal"
+          placeholder="Ingresa B (mg/kg)"
+          step="0.01"
+          min="0"
+        />
+
+        <!-- Selección de la zona geográfica del campo -->
+        <label for="region">Zona (ubicación)</label>
+        <!--
+          Selección de la región agroecológica.  Se amplían las opciones para
+          incluir grandes áreas productivas de Argentina como el NOA (Noroeste
+          Argentino), NEA (Noreste Argentino), las zonas núcleo (Norte y Sur),
+          el Litoral y el Sudeste de Buenos Aires.  Estas regiones poseen
+          climas y suelos diferenciados, de modo que las necesidades de N, P y K
+          varían ligeramente.  Las opciones "Tandil" y "Monte Maíz" se
+          mantienen para quienes deseen un ajuste aún más localizado en la
+          provincia de Buenos Aires y Córdoba, respectivamente.  Si ninguna
+          región coincide, seleccionar "Otras" aplicará un ajuste neutro.
+        -->
+        <select id="region">
+          <option value="" disabled selected>Selecciona una zona</option>
+          <option value="noa">Noroeste Argentino (NOA)</option>
+          <option value="nea">Noreste Argentino (NEA)</option>
+          <option value="nucleo_norte">Zona Núcleo Norte</option>
+          <option value="litoral">Litoral</option>
+          <option value="nucleo_sur">Zona Núcleo Sur</option>
+          <option value="sudeste">Sudeste de Buenos Aires</option>
+          <option value="tandil">Tandil (Buenos Aires)</option>
+          <option value="monte_maiz">Monte Maíz (Córdoba)</option>
+          <option value="otras">Otra zona</option>
+        </select>
+
+        <button type="submit">Calcular deficiencias</button>
+      </form>
+
+        <!-- Panel que contendrá los resultados del cálculo. Se oculta
+           inicialmente y se mostrará cuando el usuario envíe el formulario. -->
+      <div id="result" class="result"></div>
+      <!-- Gráfico de respuesta de N. Este canvas se inicializa vacío y se
+           dibuja tras calcular las deficiencias. Se dimensiona en CSS a
+           través de atributos width/height y reglas de estilo para ser
+           responsivo. -->
+      <canvas id="responseChart" width="500" height="300" style="width: 100%; max-width: 100%; margin-top: 1.5rem; display: none;"></canvas>
+
+      <footer>&copy; 2025 NutriSeeds by PreSeeds</footer>
+    </div>
+
+    <script>
+      /**
+       * Tabla de recomendaciones básicas por cultivo.
+       * Los valores representan cantidades recomendadas de nitrógeno (N),
+       * fósforo (P) y potasio (K) en la misma unidad que introducirá el
+       * usuario. Estos números son aproximaciones basadas en prácticas
+       * generales de fertilización y deberían adaptarse a las condiciones
+       * locales y a las recomendaciones de un especialista.
+       */
+      const baseRecommendations = {
+        soja: { N: 35, P: 45, K: 100 },
+        trigo: { N: 40, P: 30, K: 50 },
+        maiz: { N: 60, P: 35, K: 80 },
+        girasol: { N: 25, P: 40, K: 60 },
+        mani: { N: 20, P: 25, K: 30 },
+        cebada: { N: 35, P: 25, K: 40 },
+        lenteja: { N: 20, P: 30, K: 20 },
+        arveja: { N: 20, P: 35, K: 30 },
+        picingallo: { N: 50, P: 30, K: 60 },
+        algodon: { N: 45, P: 25, K: 70 },
+      };
+
+      /**
+       * Definición de fertilizantes comerciales y su eficiencia.
+       *
+       * Cada fertilizante contiene su composición aproximada de nutrientes
+       * (porcentaje de N, P₂O₅, K₂O u otros elementos) y un valor de
+       * eficiencia relativo.  La eficiencia está expresada como un
+       * coeficiente (0–1) que representa la fracción estimada del nutriente
+       * que llega a la planta después de pérdidas por volatilización,
+       * fijación o lixiviación.  Los valores son aproximaciones basadas
+       * en literatura agronómica general.  Por ejemplo, se estima que
+       * alrededor del 40 % del nitrógeno aplicado como urea puede perderse
+       * por volatilización y otros procesos【239938314784009†L216-L218】;
+       * además, fuentes líquidas como UAN pueden mejorar la recuperación
+       * del nitrógeno en más de un 30 % respecto de la urea【239938314784009†L179-L182】.
+       * Por ello, la eficiencia de UAN se considera superior.
+       */
+      const fertilizers = {
+        urea: {
+          name: 'Urea',
+          N: 46,
+          P: 0,
+          K: 0,
+          efficiency: 0.60,
+        },
+        uan: {
+          name: 'UAN (Urea-Ammonium Nitrate)',
+          N: 32,
+          P: 0,
+          K: 0,
+          efficiency: 0.78,
+        },
+        solmix: {
+          name: 'SolMIX',
+          N: 28,
+          P: 0,
+          K: 0,
+          S: 5.2,
+          Zn: 0.5,
+          efficiency: 0.80,
+        },
+        can: {
+          name: 'Nitrato de amonio calcáreo (CAN)',
+          N: 27,
+          P: 0,
+          K: 0,
+          Ca: 9,
+          efficiency: 0.70,
+        },
+        tsp: {
+          name: 'Superfosfato triple (TSP)',
+          N: 0,
+          P: 46,
+          K: 0,
+          efficiency: 0.25,
+        },
+        ssp: {
+          name: 'Superfosfato simple (SSP)',
+          N: 0,
+          P: 20,
+          K: 0,
+          S: 14,
+          Ca: 12,
+          efficiency: 0.20,
+        },
+        map: {
+          name: 'Fosfato monoamónico (MAP)',
+          N: 11,
+          P: 52,
+          K: 0,
+          efficiency: 0.30,
+        },
+        dap: {
+          name: 'Fosfato diamónico (DAP)',
+          N: 18,
+          P: 46,
+          K: 0,
+          efficiency: 0.30,
+        },
+        micro: {
+          name: 'Microgranulados arrancadores',
+          N: 8,
+          P: 30,
+          K: 0,
+          efficiency: 0.35,
+        },
+        an: {
+          name: 'Nitrato de amonio (AN)',
+          N: 34,
+          P: 0,
+          K: 0,
+          efficiency: 0.70,
+        },
+        kcl: {
+          name: 'Cloruro de potasio (KCl)',
+          N: 0,
+          P: 0,
+          K: 60,
+          efficiency: 0.50,
+        },
+      };
+
+      /**
+       * Coeficientes de extracción por tonelada de grano para micro y macronutrientes.
+       * Los valores para Zn, Mn y B provienen de estudios de nutrición de maíz donde se
+       * reporta que un cultivo de 10 t/ha remueve alrededor de 4 kg de Zn, 2 kg de Mn y
+       * 0,5 kg de B【559013259871009†L96-L110】. Se asume proporcionalidad lineal con
+       * el rendimiento.
+       */
+      const removalPerTon = {
+        N: 27,       // kg N por ton (N)
+        P2O5: 10,    // kg P2O5 por ton (P)
+        K2O: 20,    // kg K2O por ton (K)
+        CaO: 6.3,   // kg CaO por ton (Ca)
+        MgO: 8.0,   // kg MgO por ton (Mg)
+        S: 2.3,     // kg S por ton (S)
+        Zn: 0.4,    // kg Zn por ton (Zn)  -> 4 kg/ha at 10 t yield => 0.4 kg/ton
+        Mn: 0.2,    // kg Mn por ton (Mn)  -> 2 kg/ha at 10 t yield => 0.2 kg/ton
+        B: 0.05,    // kg B por ton (B)   -> 0.5 kg/ha at 10 t yield => 0.05 kg/ton
+      };
+
+      /**
+       * Factores de conversión de nutrientes elementales a sus formas óxido.
+       * Según tablas de IPNI y guías agronómicas, para convertir fósforo
+       * elemental a fósforo como P₂O₅ se multiplica por 2.29; de modo
+       * inverso (P₂O₅ a P) se multiplica por 0.44【153252142217073†L63-L66】.
+       * Para potasio elemental a óxido (K₂O) se multiplica por 1.20 y al
+       * revés por 0.83【153252142217073†L63-L65】. Estos factores permiten
+       * calcular la dosis de fertilizante en función del nutriente que se
+       * desea aportar.
+       */
+      const conversionFactors = {
+        P_TO_P2O5: 2.29,
+        P2O5_TO_P: 0.44,
+        K_TO_K2O: 1.20,
+        K2O_TO_K: 0.83,
+      };
+
+      // Conversiones para óxidos de calcio y magnesio a sus elementos
+      const CAO_TO_CA = 0.714; // CaO (40.08)/Ca (56.08) ratio
+      const MGO_TO_MG = 0.603; // MgO (40.30)/Mg (24.30) ratio
+
+      /**
+       * Mapa que asocia cada nutriente con un fertilizante predeterminado
+       * de alta eficiencia para suplir su deficiencia. Este esquema es
+       * simplificado y debería ajustarse según disponibilidad y costos:
+       *  - Nitrógeno (N): UAN por su mayor eficiencia frente a la urea【239938314784009†L179-L182】.
+       *  - Fósforo (P): MAP por su alto contenido de P₂O₅ y aporte de N.
+       *  - Potasio (K): KCl por ser fuente concentrada de K₂O.
+       */
+      const defaultFertilizerFor = {
+        // Utilizar urea como principal fuente de nitrógeno en lugar de UAN.
+        N: fertilizers.urea,
+        // Para fósforo se emplea MAP por su alta concentración de P₂O₅.
+        P: fertilizers.map,
+        // Para potasio se mantiene KCl como fuente concentrada de K₂O.
+        K: fertilizers.kcl,
+      };
+
+      /**
+       * Factores de ajuste por condición del año.
+       * Un año seco suele requerir un aumento de nutrientes debido a
+       * disponibilidad reducida en el suelo. Un año húmedo puede
+       * disminuir ligeramente la necesidad, pues los nutrientes son más
+       * móviles. Estos multiplicadores se aplican a las recomendaciones
+       * básicas para obtener la dosis ajustada.
+       */
+      const yearMultipliers = {
+        seco: 1.1,
+        neutro: 1.0,
+        humedo: 0.9,
+      };
+
+      /**
+       * Ajustes regionales para recomendaciones de nutrientes.
+       * Según la ubicación del campo, las necesidades de N, P y K pueden variar
+       * ligeramente debido a diferencias edáficas y climáticas. Estos
+       * multiplicadores permiten modificar las dosis ajustadas por
+       * condición anual y parámetros del suelo.  Los valores a
+       * continuación son aproximaciones generales: Tandil tiende a
+       * requerir algo menos de nitrógeno, mientras que Monte Maíz suele
+       * demandar un poco más de nitrógeno y fósforo por sus mayores
+       * rendimientos potenciales. Otras zonas utilizan el valor neutro.
+       */
+      const regionMultipliers = {
+        //
+        //  Multiplicadores regionales aproximados para ajustar las
+        //  recomendaciones de N, P y K en función de grandes áreas
+        //  productivas de Argentina.  Las cifras se basan en
+        //  referencias generales y en los diagnósticos de cultivos
+        //  estudiados por instituciones como INTA, CREA, Aapresid y
+        //  universidades de Balcarce, Tandil, Mar del Plata y Río
+        //  Cuarto.  Debido a las variaciones edáficas y climáticas, las
+        //  regiones del NOA y NEA requieren mayores aportes de
+        //  nutrientes, mientras que la Pampa Húmeda y el Sudeste
+        //  bonaerense suelen presentar reservas naturales más altas de
+        //  nitrógeno y potasio.  Estas estimaciones sirven como guía
+        //  inicial y deben ajustarse según los datos de cada lote.
+        noa: { N: 1.20, P: 1.10, K: 1.05 },          // Noroeste Argentino
+        nea: { N: 1.15, P: 1.20, K: 1.05 },          // Noreste Argentino
+        nucleo_norte: { N: 1.05, P: 1.05, K: 1.00 }, // Zona Núcleo Norte
+        litoral: { N: 1.05, P: 1.10, K: 1.00 },       // Litoral (Corrientes, Entre Ríos, etc.)
+        nucleo_sur: { N: 0.95, P: 1.00, K: 1.00 },    // Zona Núcleo Sur
+        sudeste: { N: 0.90, P: 1.00, K: 1.05 },       // Sudeste de Buenos Aires
+        tandil: { N: 0.95, P: 1.00, K: 1.00 },        // Ajuste específico para Tandil
+        monte_maiz: { N: 1.05, P: 1.05, K: 1.00 },     // Ajuste específico para Monte Maíz
+        otras: { N: 1.00, P: 1.00, K: 1.00 },         // Valor neutro cuando no se especifica región
+      };
+
+      /**
+       * Base de nitrógeno (suelo + fertilizante) necesaria para un rendimiento
+       * de 10 t/ha de maíz en cada región, en kg N/ha.  Estos valores se
+       * basan en datos de rendimiento óptimo y recomendaciones regionales
+       * recogidos de publicaciones de INTA y ensayos universitarios; por
+       * ejemplo, en la zona núcleo se requieren alrededor de 180 kg N/ha para
+       * alcanzar 10 t/ha【20464974831681†L103-L108】.  En regiones con
+       * menor fertilidad como el NOA o NEA se necesitan dosis mayores, mientras
+       * que en el sudeste bonaerense la demanda es menor.
+       */
+      const regionBaseNFor10 = {
+        noa: 220,
+        nea: 220,
+        nucleo_norte: 180,
+        nucleo_sur: 170,
+        litoral: 190,
+        sudeste: 160,
+        tandil: 180,
+        monte_maiz: 190,
+        otras: 180,
+      };
+
+      /*
+       * La definición de removalPerTon y los factores de conversión de CaO y MgO a
+       * sus elementos se han trasladado a secciones anteriores para permitir la
+       * inclusión de micronutrientes (Zn, Mn y B).  Se eliminan aquí para
+       * evitar duplicidad.
+       */
+
+      /**
+       * Genera puntos para una curva de respuesta a la fertilización
+       * nitrogenada con comportamiento de saturación.  Utiliza una
+       * función exponencial negativa (modelo de Mitscherlich) que se
+       * aproxima a un máximo a medida que aumenta la dosis de N.
+       *
+       * @param {number} maxYield Rendimiento máximo relativo (por ejemplo 100)
+       * @param {number} baseRecN Recomendación ajustada de N, usada para
+       * determinar la pendiente del modelo (cuanto mayor sea la
+       * recomendación, más lenta será la saturación).
+       * @returns {Array<{x:number,y:number}>} Arreglo de puntos (x, y)
+       */
+      function generateResponseData(maxYield, baseRecN) {
+        const data = [];
+        if (!baseRecN || baseRecN <= 0) return data;
+        const maxX = baseRecN * 2; // explorar hasta el doble de la recomendación
+        const step = maxX / 20; // 21 puntos
+        const rate = 1 / baseRecN;
+        for (let x = 0; x <= maxX + 1e-6; x += step) {
+          const y = maxYield * (1 - Math.exp(-rate * x));
+          data.push({ x, y });
+        }
+        return data;
+      }
+
+      /**
+       * Dibuja una curva y ejes en un elemento canvas para mostrar la
+       * respuesta del cultivo al nitrógeno aplicado. También marca la
+       * dosis de nitrógeno recomendada y el valor medido en suelo con
+       * líneas verticales.  Este gráfico es puramente orientativo.
+       *
+       * @param {Array<{x:number,y:number}>} data Datos a graficar
+       * @param {number} recommendedN Dosis ajustada recomendada de N
+       * @param {number} currentN Valor medido de N en suelo
+       */
+      function renderChart(data, recommendedN, currentN) {
+        const canvas = document.getElementById('responseChart');
+        if (!canvas || !canvas.getContext) return;
+        const ctx = canvas.getContext('2d');
+        const width = canvas.width;
+        const height = canvas.height;
+        // Limpiar canvas
+        ctx.clearRect(0, 0, width, height);
+        // Parámetros para bordes y escalado
+        const padding = 50;
+        const left = padding;
+        const right = width - padding;
+        const bottom = height - padding;
+        const top = padding;
+        const innerW = right - left;
+        const innerH = bottom - top;
+        const xMax = data.length ? Math.max(...data.map(d => d.x)) : 1;
+        const yMax = data.length ? Math.max(...data.map(d => d.y)) : 1;
+        const xScale = innerW / xMax;
+        const yScale = innerH / yMax;
+        // Dibujar ejes
+        ctx.strokeStyle = '#3d3d3c';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(left, top);
+        ctx.lineTo(left, bottom);
+        ctx.lineTo(right, bottom);
+        ctx.stroke();
+        // Ticks y etiquetas eje X
+        const ticksX = 5;
+        ctx.fillStyle = '#3d3d3c';
+        ctx.textAlign = 'center';
+        ctx.font = '12px Arial';
+        for (let i = 0; i <= ticksX; i++) {
+          const xVal = (xMax / ticksX) * i;
+          const xPos = left + xVal * xScale;
+          ctx.beginPath();
+          ctx.moveTo(xPos, bottom);
+          ctx.lineTo(xPos, bottom + 5);
+          ctx.stroke();
+          ctx.fillText(xVal.toFixed(0), xPos, bottom + 20);
+        }
+        // Eje Y ticks y etiquetas
+        const ticksY = 5;
+        ctx.textAlign = 'right';
+        for (let i = 0; i <= ticksY; i++) {
+          const yVal = (yMax / ticksY) * i;
+          const yPos = bottom - yVal * yScale;
+          ctx.beginPath();
+          ctx.moveTo(left - 5, yPos);
+          ctx.lineTo(left, yPos);
+          ctx.stroke();
+          ctx.fillText(yVal.toFixed(0), left - 10, yPos + 4);
+        }
+        // Etiquetas de ejes
+        ctx.textAlign = 'center';
+        ctx.font = '14px Arial';
+        // Etiqueta del eje X.  Se especifica en kg/ha para reflejar que
+        // las dosis calculadas se expresan como kilogramos de nitrógeno por
+        // hectárea.
+        ctx.fillText('Dosis de N (kg/ha)', (left + right) / 2, height - 10);
+        ctx.save();
+        ctx.translate(15, (top + bottom) / 2);
+        ctx.rotate(-Math.PI / 2);
+        ctx.fillText('Rendimiento relativo (%)', 0, -20);
+        ctx.restore();
+        // Dibujar curva
+        if (data.length > 0) {
+          ctx.strokeStyle = '#f7bf2c';
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          for (let i = 0; i < data.length; i++) {
+            const px = left + data[i].x * xScale;
+            const py = bottom - data[i].y * yScale;
+            if (i === 0) ctx.moveTo(px, py);
+            else ctx.lineTo(px, py);
+          }
+          ctx.stroke();
+        }
+        // Línea vertical para la dosis recomendada de N
+        if (recommendedN && recommendedN > 0) {
+          const xPos = left + recommendedN * xScale;
+          ctx.strokeStyle = '#3d3d3c';
+          ctx.setLineDash([5, 5]);
+          ctx.beginPath();
+          ctx.moveTo(xPos, top);
+          ctx.lineTo(xPos, bottom);
+          ctx.stroke();
+          ctx.setLineDash([]);
+          ctx.fillStyle = '#3d3d3c';
+          ctx.fillText('N recomendado', xPos, top - 10);
+        }
+        // Línea vertical para N medido
+        if (currentN && currentN > 0) {
+          const xPos2 = left + currentN * xScale;
+          ctx.strokeStyle = '#bd5f00';
+          ctx.setLineDash([5, 5]);
+          ctx.beginPath();
+          ctx.moveTo(xPos2, top);
+          ctx.lineTo(xPos2, bottom);
+          ctx.stroke();
+          ctx.setLineDash([]);
+          ctx.fillStyle = '#bd5f00';
+          ctx.fillText('N en suelo', xPos2, top - 10);
+        }
+      }
+
+      /**
+       * Formatea un número a dos decimales evitando valores negativos
+       * y reemplazando con 0 cuando sea apropiado.
+       *
+       * @param {number} value El número a formatear.
+       * @returns {string} Valor formateado con dos decimales.
+       */
+      function formatNumber(value) {
+        return value.toFixed(2);
+      }
+
+      /**
+       * Calcula la deficiencia de un nutriente dado el valor recomendado
+       * y el valor real medido. Devuelve 0 si el suelo ya contiene más
+       * del nutriente que lo recomendado.
+       *
+       * @param {number} recommended Valor recomendado.
+       * @param {number} actual Valor medido en el suelo.
+       * @returns {number} Deficiencia calculada (o 0 si no hay deficiencia).
+       */
+      function calculateDeficiency(recommended, actual) {
+        const diff = recommended - actual;
+        return diff > 0 ? diff : 0;
+      }
+
+      /**
+       * Ajusta las recomendaciones de N, P y K en función de parámetros de suelo.
+       * Si la materia orgánica (MO) es mayor al 4 %, se reduce la recomendación
+       * de N en un 20 %. Si es menor al 2 %, se aumenta un 10 %.  La CIC ajusta
+       * la recomendación de K: si CIC > 20 se reduce 10 %, si CIC < 10 se aumenta 10 %.
+       * PSI ajusta P de manera similar: PSI > 30 reduce 10 %, PSI < 10 aumenta 10 %.
+       * Otros parámetros se muestran informativos, pero no modifican la dosis.
+       *
+       * @param {number} nRec Recomendación base de N
+       * @param {number} pRec Recomendación base de P
+       * @param {number} kRec Recomendación base de K
+       * @param {number} om Materia orgánica (%)
+       * @param {number} cic CIC (Cation Exchange Capacity)
+       * @param {number} psi PSI (Índice de saturación de fósforo)
+       * @returns {object} Objeto con las recomendaciones ajustadas {N, P, K}
+       */
+      function adjustRecommendations(nRec, pRec, kRec, om, cic, psi) {
+        let adjN = nRec;
+        let adjP = pRec;
+        let adjK = kRec;
+        // Ajustes por materia orgánica
+        if (!isNaN(om)) {
+          if (om > 4) {
+            adjN *= 0.8; // reducir N en 20 %
+          } else if (om < 2) {
+            adjN *= 1.1; // aumentar N en 10 %
+          }
+        }
+        // Ajustes por CIC
+        if (!isNaN(cic)) {
+          if (cic > 20) {
+            adjK *= 0.9; // reducir K en 10 %
+          } else if (cic < 10) {
+            adjK *= 1.1; // aumentar K en 10 %
+          }
+        }
+        // Ajustes por PSI
+        if (!isNaN(psi)) {
+          if (psi > 30) {
+            adjP *= 0.9; // reducir P en 10 %
+          } else if (psi < 10) {
+            adjP *= 1.1; // aumentar P en 10 %
+          }
+        }
+        return { N: adjN, P: adjP, K: adjK };
+      }
+
+      // Referencias a los elementos del DOM
+      const form = document.getElementById('nutriForm');
+      const resultContainer = document.getElementById('result');
+
+      /**
+       * Maneja el envío del formulario. Recopila los datos del usuario,
+       * realiza los cálculos necesarios y actualiza la interfaz con los
+       * resultados. Si los campos obligatorios no están completos, no
+       * realiza ninguna operación.
+       */
+      form.addEventListener('submit', function (event) {
+        event.preventDefault();
+
+        // Capturar parámetros del formulario
+        const cropKey = document.getElementById('crop').value;
+        const yearKey = document.getElementById('yearType').value;
+        const nVal = parseFloat(document.getElementById('nVal').value);
+        const pVal = parseFloat(document.getElementById('pVal').value);
+        const kVal = parseFloat(document.getElementById('kVal').value);
+        const omVal = parseFloat(document.getElementById('omVal').value);
+        const sVal = parseFloat(document.getElementById('sVal').value);
+        const caVal = parseFloat(document.getElementById('caVal').value);
+        const mgVal = parseFloat(document.getElementById('mgVal').value);
+        const nanVal = parseFloat(document.getElementById('nanVal').value);
+        const ecVal = parseFloat(document.getElementById('ecVal').value);
+        const cicVal = parseFloat(document.getElementById('cicVal').value);
+        const psiVal = parseFloat(document.getElementById('psiVal').value);
+
+        // Capturar micronutrientes del formulario (mg/kg)
+        const znVal = parseFloat(document.getElementById('znVal').value);
+        const mnVal = parseFloat(document.getElementById('mnVal').value);
+        const bVal  = parseFloat(document.getElementById('bVal').value);
+        const yieldInput = parseFloat(document.getElementById('yieldVal').value);
+        // Tomar el rendimiento como 10 t/ha por defecto si no se proporciona
+        const yieldVal = isNaN(yieldInput) || yieldInput <= 0 ? 10 : yieldInput;
+
+        // Validación básica
+        if (!cropKey || !yearKey || isNaN(nVal) || isNaN(pVal) || isNaN(kVal)) {
+          alert('Por favor, completa todos los campos obligatorios correctamente.');
+          return;
+        }
+
+        // Determinar la base de nitrógeno por región para 10 t/ha y ajustarla al rendimiento
+        const regionKeyVal = document.getElementById('region').value || 'otras';
+        const baseNFor10 = regionBaseNFor10[regionKeyVal] || regionBaseNFor10.otras;
+        const baseNPerTon = baseNFor10 / 10;
+        let recN_kg = baseNPerTon * yieldVal;
+
+        // Recomendaciones basadas en extracción por tonelada
+        let recP2O5_kg = removalPerTon.P2O5 * yieldVal;
+        let recK2O_kg = removalPerTon.K2O * yieldVal;
+        // Convertir a elementos
+        let recP_kg = recP2O5_kg * conversionFactors.P2O5_TO_P;
+        let recK_kg = recK2O_kg * conversionFactors.K2O_TO_K;
+        // Calcio, magnesio y azufre
+        let recCaO_kg = removalPerTon.CaO * yieldVal;
+        let recMgO_kg = removalPerTon.MgO * yieldVal;
+        let recS_kg = removalPerTon.S * yieldVal;
+        let recCa_kg = recCaO_kg * CAO_TO_CA;
+        let recMg_kg = recMgO_kg * MGO_TO_MG;
+
+        // Micronutrientes: recomendaciones por tonelada (kg/ha)
+        let recZn_kg = removalPerTon.Zn * yieldVal;
+        let recMn_kg = removalPerTon.Mn * yieldVal;
+        let recB_kg  = removalPerTon.B  * yieldVal;
+
+        // Convertir recomendaciones de N, P y K a mg/kg (1 kg/ha = 0.5 mg/kg)
+        let recN_mgkg = recN_kg / 2;
+        let recP_mgkg = recP_kg / 2;
+        let recK_mgkg = recK_kg / 2;
+        // Ajuste por parámetros de suelo para N-P-K (en mg/kg)
+        const adjusted = adjustRecommendations(recN_mgkg, recP_mgkg, recK_mgkg, omVal, cicVal, psiVal);
+        // Aplicar multiplicadores regionales para N-P-K
+        if (regionMultipliers[regionKeyVal]) {
+          const rm = regionMultipliers[regionKeyVal];
+          adjusted.N *= rm.N;
+          adjusted.P *= rm.P;
+          adjusted.K *= rm.K;
+        }
+        // Convertir recomendaciones ajustadas de mg/kg a kg/ha
+        const adjRecN_kg = adjusted.N * 2;
+        const adjRecP_kg = adjusted.P * 2;
+        const adjRecK_kg = adjusted.K * 2;
+
+        // Calcular oferta del suelo (mg/kg convertidos a kg/ha)
+        const soilN_kg = nVal * 2;
+        const soilP_kg = pVal * 2;
+        const soilK_kg = kVal * 2;
+        const soilS_kg = isNaN(sVal) ? 0 : sVal * 2;
+        const soilCa_kg = isNaN(caVal) ? 0 : caVal * 2;
+        const soilMg_kg = isNaN(mgVal) ? 0 : mgVal * 2;
+        const soilZn_kg = isNaN(znVal) ? 0 : znVal * 2;
+        const soilMn_kg = isNaN(mnVal) ? 0 : mnVal * 2;
+        const soilB_kg  = isNaN(bVal)  ? 0 : bVal  * 2;
+
+        // Deficiencias (kg/ha).  Si el suelo ya aporta más que la recomendación, la deficiencia es 0.
+        const defN_kg = Math.max(0, adjRecN_kg - soilN_kg);
+        const defP_kg = Math.max(0, adjRecP_kg - soilP_kg);
+        const defK_kg = Math.max(0, adjRecK_kg - soilK_kg);
+        const defCa_kg = Math.max(0, recCa_kg - soilCa_kg);
+        const defMg_kg = Math.max(0, recMg_kg - soilMg_kg);
+        const defS_kg = Math.max(0, recS_kg - soilS_kg);
+        const defZn_kg = Math.max(0, recZn_kg - soilZn_kg);
+        const defMn_kg = Math.max(0, recMn_kg - soilMn_kg);
+        const defB_kg  = Math.max(0, recB_kg  - soilB_kg);
+
+        // Construir HTML para parámetros adicionales de suelo
+        let extraMetricsHtml = '';
+        if (!isNaN(omVal)) extraMetricsHtml += `<li>Materia orgánica (MO): ${formatNumber(omVal)} %</li>`;
+        if (!isNaN(cicVal)) extraMetricsHtml += `<li>CIC: ${formatNumber(cicVal)}</li>`;
+        if (!isNaN(psiVal)) extraMetricsHtml += `<li>PSI: ${formatNumber(psiVal)}</li>`;
+        if (!isNaN(ecVal)) extraMetricsHtml += `<li>Conductividad eléctrica (CE): ${formatNumber(ecVal)}</li>`;
+        if (!isNaN(sVal)) extraMetricsHtml += `<li>Azufre (S): ${formatNumber(sVal)}</li>`;
+        if (!isNaN(caVal)) extraMetricsHtml += `<li>Calcio (Ca): ${formatNumber(caVal)}</li>`;
+        if (!isNaN(mgVal)) extraMetricsHtml += `<li>Magnesio (Mg): ${formatNumber(mgVal)}</li>`;
+        if (!isNaN(nanVal)) extraMetricsHtml += `<li>NAN: ${formatNumber(nanVal)}</li>`;
+        if (!isNaN(znVal)) extraMetricsHtml += `<li>Zinc (Zn): ${formatNumber(znVal)} mg/kg</li>`;
+        if (!isNaN(mnVal)) extraMetricsHtml += `<li>Manganeso (Mn): ${formatNumber(mnVal)} mg/kg</li>`;
+        if (!isNaN(bVal))  extraMetricsHtml += `<li>Boro (B): ${formatNumber(bVal)} mg/kg</li>`;
+
+        // Construir el contenido HTML para los resultados
+        let resultHtml = `
+          <h3>Resultados para ${cropKey.charAt(0).toUpperCase() + cropKey.slice(1)}</h3>
+          <p><strong>Condición del año:</strong> ${yearKey.charAt(0).toUpperCase() + yearKey.slice(1)}</p>
+          <p><strong>Zona:</strong> ${(() => {
+            const rk = document.getElementById('region').value;
+            if (!rk) return 'No especificada';
+            const opt = document.querySelector('#region option[value="' + rk + '"]');
+            return opt ? opt.textContent : rk;
+          })()}</p>
+          <p><strong>Rendimiento objetivo:</strong> ${formatNumber(yieldVal)} t/ha</p>
+          <p><strong>Extracción recomendada (kg/ha):</strong></p>
+          <ul>
+            <li>Nitrógeno (N): ${formatNumber(adjRecN_kg)}</li>
+            <li>Fósforo (P): ${formatNumber(adjRecP_kg)}</li>
+            <li>Potasio (K): ${formatNumber(adjRecK_kg)}</li>
+            <li>Calcio (Ca): ${formatNumber(recCa_kg)}</li>
+            <li>Magnesio (Mg): ${formatNumber(recMg_kg)}</li>
+            <li>Azufre (S): ${formatNumber(recS_kg)}</li>
+            <li>Zinc (Zn): ${formatNumber(recZn_kg)}</li>
+            <li>Manganeso (Mn): ${formatNumber(recMn_kg)}</li>
+            <li>Boro (B): ${formatNumber(recB_kg)}</li>
+          </ul>
+          <p><strong>Valores medidos en suelo (kg/ha):</strong></p>
+          <ul>
+            <li>Nitrógeno (N): ${formatNumber(soilN_kg)}</li>
+            <li>Fósforo (P): ${formatNumber(soilP_kg)}</li>
+            <li>Potasio (K): ${formatNumber(soilK_kg)}</li>
+            <li>Calcio (Ca): ${formatNumber(soilCa_kg)}</li>
+            <li>Magnesio (Mg): ${formatNumber(soilMg_kg)}</li>
+            <li>Azufre (S): ${formatNumber(soilS_kg)}</li>
+            <li>Zinc (Zn): ${formatNumber(soilZn_kg)}</li>
+            <li>Manganeso (Mn): ${formatNumber(soilMn_kg)}</li>
+            <li>Boro (B): ${formatNumber(soilB_kg)}</li>
+          </ul>`;
+        // Incluir parámetros de suelo si se proporcionaron
+        if (extraMetricsHtml) {
+          resultHtml += `
+          <p><strong>Parámetros de suelo introducidos:</strong></p>
+          <ul>${extraMetricsHtml}</ul>`;
+        }
+        resultHtml += `
+          <p><strong>Deficiencia estimada (kg/ha):</strong></p>
+          <ul>
+            <li>Nitrógeno (N): ${formatNumber(defN_kg)}</li>
+            <li>Fósforo (P): ${formatNumber(defP_kg)}</li>
+            <li>Potasio (K): ${formatNumber(defK_kg)}</li>
+            <li>Calcio (Ca): ${formatNumber(defCa_kg)}</li>
+            <li>Magnesio (Mg): ${formatNumber(defMg_kg)}</li>
+            <li>Azufre (S): ${formatNumber(defS_kg)}</li>
+            <li>Zinc (Zn): ${formatNumber(defZn_kg)}</li>
+            <li>Manganeso (Mn): ${formatNumber(defMn_kg)}</li>
+            <li>Boro (B): ${formatNumber(defB_kg)}</li>
+          </ul>
+          <p>Una deficiencia de 0 significa que el suelo contiene al menos la cantidad recomendada de ese nutriente.</p>
+        `;
+
+        /**
+         * Calcula la dosis de fertilizante necesaria a partir de la deficiencia
+         * en kg/ha y la fuente seleccionada para cada nutriente.  Convierte
+         * las deficiencias de fósforo y potasio a sus formas óxido antes de
+         * estimar el fertilizante requerido.  Devuelve la dosis en kg/ha de
+         * fertilizante.
+         * @param {number} defKg Dosis de deficiencia en kg/ha
+         * @param {string} nutrientKey 'N', 'P' o 'K'
+         */
+        function computeDose(defKg, nutrientKey) {
+          if (!defKg || defKg <= 0) return 0;
+          const fert = defaultFertilizerFor[nutrientKey];
+          if (!fert) return 0;
+          let required = defKg;
+          if (nutrientKey === 'P') {
+            required = defKg * conversionFactors.P_TO_P2O5;
+          } else if (nutrientKey === 'K') {
+            required = defKg * conversionFactors.K_TO_K2O;
+          }
+          let contentPerc = 0;
+          if (nutrientKey === 'N') contentPerc = fert.N;
+          else if (nutrientKey === 'P') contentPerc = fert.P;
+          else if (nutrientKey === 'K') contentPerc = fert.K;
+          const contentFraction = contentPerc / 100;
+          if (contentFraction === 0) return 0;
+          const eff = fert.efficiency || 1;
+          return required / (contentFraction * eff);
+        }
+
+        // Calcular dosis recomendada de fertilizantes para N, P y K (kg/ha)
+        const doseN = computeDose(defN_kg, 'N');
+        const doseP = computeDose(defP_kg, 'P');
+        const doseK = computeDose(defK_kg, 'K');
+
+        // Construir HTML de recomendación de fertilizantes
+        const fertRecommendationHtml = `
+          <h3>Recomendación de fertilizantes y dosis</h3>
+          <p>En función de las deficiencias estimadas y los fertilizantes de mayor eficiencia:</p>
+          <ul>
+            <li>Nitrógeno (N): ${
+              doseN > 0
+                ? `aplicar ${defaultFertilizerFor.N.name} – dosis aproximada de ${formatNumber(doseN)} kg/ha`
+                : 'no se requiere fertilizante nitrogenado'
+            }</li>
+            <li>Fósforo (P): ${
+              doseP > 0
+                ? `aplicar ${defaultFertilizerFor.P.name} – dosis aproximada de ${formatNumber(doseP)} kg/ha`
+                : 'no se requiere fertilizante fosforado'
+            }</li>
+            <li>Potasio (K): ${
+              doseK > 0
+                ? `aplicar ${defaultFertilizerFor.K.name} – dosis aproximada de ${formatNumber(doseK)} kg/ha`
+                : 'no se requiere fertilizante potásico'
+            }</li>
+          </ul>
+          <p>Estas dosis se calculan a partir de las deficiencias detectadas, aplicando factores de conversión de IPNI (P a P₂O₅ y K a K₂O) y considerando la eficiencia promedio de cada fuente.</p>
+        `;
+
+        // Construir la tabla de eficiencia de fertilizantes
+        let fertRows = '';
+        for (const key in fertilizers) {
+          const f = fertilizers[key];
+          const comps = [];
+          if (f.N && f.N > 0) comps.push(`N: ${f.N}%`);
+          if (f.P && f.P > 0) comps.push(`P₂O₅: ${f.P}%`);
+          if (f.K && f.K > 0) comps.push(`K₂O: ${f.K}%`);
+          if (f.S && f.S > 0) comps.push(`S: ${f.S}%`);
+          if (f.Ca && f.Ca > 0) comps.push(`Ca: ${f.Ca}%`);
+          if (f.Zn && f.Zn > 0) comps.push(`Zn: ${f.Zn}%`);
+          const compStr = comps.join(', ');
+          const effPercent = (f.efficiency * 100).toFixed(0) + '%';
+          fertRows += `<tr><td>${f.name}</td><td>${compStr}</td><td>${effPercent}</td></tr>`;
+        }
+        const fertTableHtml = `
+          <h3>Eficiencia de fertilizantes principales</h3>
+          <table class="fertilizer-table">
+            <thead>
+              <tr>
+                <th>Fertilizante</th>
+                <th>Composición aproximada</th>
+                <th>Eficiencia</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${fertRows}
+            </tbody>
+          </table>
+        `;
+
+        // Combinar resultados, recomendación de fertilizante y la tabla de eficiencias en el panel de resultados
+        resultContainer.innerHTML = resultHtml + fertRecommendationHtml + fertTableHtml;
+        resultContainer.style.display = 'block';
+        // Generar datos para la curva de respuesta y dibujar el gráfico
+        const chartData = generateResponseData(100, adjRecN_kg);
+        const canvasEl = document.getElementById('responseChart');
+        if (canvasEl) {
+          canvasEl.style.display = 'block';
+        }
+        renderChart(chartData, adjRecN_kg, soilN_kg);
+      });
+    </script>
+  </body>
+</html>
